@@ -442,6 +442,15 @@
         let writer = null;
 
         const cardElement = document.getElementById('flashcard');
+        // --- KHỞI TẠO HIỆU ỨNG ÂM THANH ---
+        const sfxFlip = new Audio('https://assets.mixkit.co/active_storage/sfx/2121/2121-preview.mp3'); // Tiếng lật trang
+        const sfxCorrect = new Audio('https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3'); // Tiếng tinh tinh (Đúng)
+        const sfxWrong = new Audio('https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3'); // Tiếng báo lỗi (Sai)
+        
+        // Điều chỉnh âm lượng (từ 0.0 đến 1.0)
+        sfxFlip.volume = 0.5;
+        sfxCorrect.volume = 0.6;
+        sfxWrong.volume = 0.5;
 
         // Text-To-Speech
         function speakWord(text) {
@@ -462,6 +471,11 @@
                 if (flashcards[currentIndex]) speakWord(flashcards[currentIndex].word);
                 return;
             }
+            
+            // Phát âm thanh khi lật
+            sfxFlip.currentTime = 0; // Trả về đầu file để có thể lật liên tục
+            sfxFlip.play();
+            
             cardElement.classList.toggle('is-flipped');
         }
 
@@ -550,14 +564,23 @@
         function nextCard() { if (currentIndex < flashcards.length - 1) { currentIndex++; updateCard(); } }
         function prevCard() { if (currentIndex > 0) { currentIndex--; updateCard(); } }
 
-        function markCard(isCorrect) {
+       function markCard(isCorrect) {
             if (flashcards.length === 0) return;
             const item = flashcards[currentIndex];
+            
             if (isCorrect) {
+                // Phát âm thanh Đúng
+                sfxCorrect.currentTime = 0;
+                sfxCorrect.play();
+                
                 correctCount++; document.getElementById('correct-count').innerText = correctCount;
                 if (!learnedList.includes(item.id)) learnedList.push(item.id);
                 reviewList = reviewList.filter(id => id !== item.id);
             } else {
+                // Phát âm thanh Sai
+                sfxWrong.currentTime = 0;
+                sfxWrong.play();
+                
                 wrongCount++; document.getElementById('wrong-count').innerText = wrongCount;
                 if (!reviewList.includes(item.id)) reviewList.push(item.id);
                 learnedList = learnedList.filter(id => id !== item.id);
@@ -566,9 +589,6 @@
             if (currentIndex < flashcards.length - 1) { setTimeout(() => { currentIndex++; updateCard(); }, 250); }
             else { setTimeout(() => { alert(`Danh mục học đã hoàn tất!\nThuộc bài: ${correctCount}\nCần ôn lại: ${wrongCount}`); resetGame(); }, 350); }
         }
-
-        function resetGame() { currentIndex = 0; correctCount = 0; wrongCount = 0; document.getElementById('correct-count').innerText = 0; document.getElementById('wrong-count').innerText = 0; updateCard(); }
-        function shuffleCards() { flashcards.sort(() => Math.random() - 0.5); resetGame(); }
 
         // --- HOẠT CẢNH HANZI WRITER ---
         function openStrokeModal() {
