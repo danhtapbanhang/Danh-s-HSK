@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Danh Học Tiếng Trung</title>
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        body { background-color: #f2f2f7; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; color: #000000; padding: 20px 16px; }
+        .game-container { width: 100%; max-width: 440px; height: 100%; display: flex; flex-direction: column; flex-grow: 1; justify-content: center; }
+
+        /* HEADER & AUTH BANNER */
+        .auth-banner { display: flex; justify-content: space-between; align-items: center; background-color: #ffffff; padding: 10px 16px; border-radius: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .user-status { font-size: 0.85rem; color: #3a3a3c; font-weight: 500; }
+        .user-status span { color: #ff9500; font-weight: 600; }
+        .btn-auth-trigger { background: none; border: none; color: #ff9500; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .btn-auth-trigger.logout { color: #ff3b30; }
+
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        h1.brand-title { color: #000000; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+        .header-actions { display: flex; gap: 10px; }
+        .btn-icon-trigger { background: none; border: none; color: #ff9500; font-size: 0.9rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
+        /* SCROLLABLE SEGMENTED CONTROL */
+        .segmented-wrapper { width: 100%; overflow-x: auto; margin-bottom: 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .segmented-wrapper::-webkit-scrollbar { display: none; }
+        .segmented-control { display: flex; background-color: #e3e3e9; padding: 2px; border-radius: 9px; min-width: max-content; gap: 2px; }
+        .segment-btn { border: none; background: none; padding: 8px 14px; font-size: 0.8rem; font-weight: 500; color: #3a3a3c; cursor: pointer; border-radius: 7px; transition: all 0.15s ease; text-align: center; }
+        .segment-btn.is-active { background-color: #ffffff; font-weight: 600; color: #000000; box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1); }
+
+        /* SCOREBOARD & PROGRESS */
+        .score-board { display: flex; justify-content: space-between; background: #ffffff; padding: 12px 16px; border-radius: 14px; margin-bottom: 12px; font-size: 0.85rem; color: #3a3a3c; font-weight: 500; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); }
+        .score-board span { font-weight: 600; }
+        .progress-container { width: 100%; background-color: #e5e5ea; border-radius: 10px; margin-bottom: 15px; overflow: hidden; }
+        .progress-bar { height: 4px; width: 0%; background-color: #ff9500; transition: width 0.25s ease; }
+
+        /* FLASHCARD WRAPPER - NO IMAGES */
+        .flashcard-wrapper { perspective: 1000px; width: 100%; height: 320px; margin-bottom: 15px; }
+        .flashcard { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.15, 0.85, 0.35, 1.05); border-radius: 24px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); cursor: pointer; }
+        .flashcard.is-flipped { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 24px; display: flex; flex-direction: column; padding: 25px; background-color: #ffffff; border: 1px solid rgba(0, 0, 0, 0.04); justify-content: center; align-items: center; text-align: center; }
+        
+        /* MẶT TRƯỚC */
+        .word-container { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+        .word { font-size: 5rem; font-weight: 700; color: #000000; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; line-height: 1; }
+        .btn-speaker { background-color: #f2f2f7; border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff9500; cursor: pointer; }
+        .pinyin { font-size: 1.6rem; color: #8e8e93; font-weight: 500; letter-spacing: 0.5px; }
+
+        /* MẶT SAU */
+        .card-back { transform: rotateY(180deg); }
+        .pinyin-detail { font-size: 1.2rem; font-weight: 500; color: #8e8e93; margin-bottom: 5px; }
+        .meaning-vi { font-size: 1.8rem; font-weight: 800; color: #ff9500; margin-bottom: 20px; line-height: 1.2; }
+        .example-box { font-size: 1rem; color: #1c1c1e; line-height: 1.4; background-color: #f2f2f7; padding: 15px; border-radius: 14px; width: 100%; }
+        .example-cn { font-weight: 600; font-family: "PingFang SC", sans-serif; font-size: 1.15rem; margin-bottom: 6px; }
+        .example-vn { color: #48484a; font-size: 0.95rem; }
+
+        /* CONTROLS */
+        .btn-stroke-trigger { width: 100%; background: #ffffff; border: 1px solid #e5e5ea; color: #007aff; padding: 12px; border-radius: 14px; font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .action-buttons { display: flex; gap: 12px; margin-bottom: 20px; }
+        .btn-status { flex: 1; padding: 14px; border: none; border-radius: 14px; font-size: 0.95rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-wrong { background-color: #ffe5e5; color: #ff3b30; }
+        .btn-correct { background-color: #e5f9e7; color: #34c759; }
+
+        .nav-buttons { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .btn-nav { background: none; border: none; color: #ff9500; font-size: 0.95rem; font-weight: 600; cursor: pointer; padding: 6px; }
+        .btn-shuffle { background-color: #e5e5ea; color: #3a3a3c; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; }
+        button:disabled { color: #aeaeb2 !important; cursor: not-allowed; }
+
+        /* MODALS SYSTEM */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.4); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; z-index: 1000; }
+        .modal-overlay.is-visible { opacity: 1; pointer-events: auto; }
+        .modal-sheet { width: 100%; max-width: 460px; background-color: #f2f2f7; border-top-left-radius: 16px; border-top-right-radius: 16px; padding: 18px; transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.15, 0.85, 0.35, 1); }
+        .modal-overlay.is-visible .modal-sheet { transform: translateY(0); }
+        .modal-handle { width: 36px; height: 5px; background-color: #c7c7cc; border-radius: 3px; margin: 0 auto 12px auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .modal-title { font-size: 1.1rem; font-weight: 600; color: #000; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+        .stat-card { background-color: #ffffff; padding: 14px; border-radius: 12px; text-align: center; }
+        .stat-val { font-size: 1.5rem; font-weight: 700; color: #000; }
+        .stat-lbl { font-size: 0.7rem; color: #8e8e93; text-transform: uppercase; font-weight: 600; }
+        .chart-container { background-color: #ffffff; border-radius: 12px; padding: 14px; }
+        .bar-wrapper { height: 20px; background-color: #e5e5ea; border-radius: 5px; display: flex; overflow: hidden; }
+        .bar-segment { height: 100%; transition: width 0.3s; }
+        .bar-segment.correct { background-color: #34c759; }
+        .bar-segment.review { background-color: #ff9500; }
+        .chart-legend { display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.75rem; color: #8e8e93; }
+
+        .input-group { background-color: #ffffff; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+        .input-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #e5e5ea; }
+        .input-row:last-child { border-bottom: none; }
+        .input-row label { width: 100px; font-size: 0.9rem; color: #3a3a3c; }
+        .input-row input { flex: 1; border: none; outline: none; font-size: 0.9rem; }
+        .btn-danger-zone { display: block; width: 100%; padding: 12px; border: none; background-color: #ffffff; color: #ff3b30; font-size: 0.9rem; font-weight: 500; border-radius: 12px; cursor: pointer; }
+        .empty-state-text { color: #8e8e93; font-size: 0.95rem; text-align: center; padding: 40px 10px; }
+
+        /* Tùy chỉnh Modal Animation nét chữ */
+        .modal-stroke-content { background: #fff; padding: 25px; border-radius: 20px; text-align: center; width: 90%; max-width: 340px; margin: auto; transform: scale(0.9); transition: transform 0.25s; }
+        .modal-overlay.is-visible .modal-stroke-content { transform: scale(1); }
+        #character-target-div { width: 180px; height: 180px; margin: 20px auto; background: #f2f2f7; border-radius: 16px; display: flex; justify-content: center; align-items: center; border: 1px dashed #c7c7cc; }
+        .btn-replay { background: #e5f9e7; color: #34c759; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="auth-banner">
+            <div class="user-status" id="lbl-user-status">Trạng thái: <span>Khách</span></div>
+            <button class="btn-auth-trigger" id="btn-auth-action" onclick="openAuthModal()">Đăng nhập</button>
+        </div>
+
+        <div class="header-area">
+            <h1 class="brand-title">Danh Học Tiếng Trung</h1>
+            <div class="header-actions">
+                <button class="btn-icon-trigger" onclick="openStatsModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                </button>
+                <button class="btn-icon-trigger" onclick="openAddWordModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Thêm từ
+                </button>
+            </div>
+        </div>
+        
+        <div class="segmented-wrapper">
+            <div class="segmented-control">
+                <button class="segment-btn is-active" id="seg-hsk1" onclick="switchCategory('hsk1')">HSK 1</button>
+                <button class="segment-btn" id="seg-hsk2" onclick="switchCategory('hsk2')">HSK 2</button>
+                <button class="segment-btn" id="seg-custom" onclick="switchCategory('custom')">Sổ tay riêng</button>
+                <button class="segment-btn" id="seg-review" onclick="switchCategory('review')">Ôn tập (0)</button>
+            </div>
+        </div>
+        
+        <div class="score-board">
+            <div>Đã thuộc: <span id="correct-count" style="color: #34c759;">0</span></div>
+            <div>Tiến độ: <span id="card-index">0/0</span></div>
+            <div>Chưa thuộc: <span id="wrong-count" style="color: #ff3b30;">0</span></div>
+        </div>
+        <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+
+        <div class="flashcard-wrapper">
+            <div class="flashcard" id="flashcard" onclick="handleCardClick(event)">
+                <div class="card-face card-front" id="card-front-view">
+                    <div class="word-container">
+                        <div class="word" id="lbl-word">-</div>
+                        <button class="btn-speaker" id="btn-speak-icon" title="Phát âm chuẩn">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                        </button>
+                    </div>
+                    <div class="pinyin" id="lbl-pinyin">-</div>
+                </div>
+                <div class="card-face card-back" id="card-back-view">
+                    <div class="pinyin-detail" id="lbl-pinyin-back">-</div>
+                    <div class="meaning-vi" id="lbl-mean-vi">-</div>
+                    <div class="example-box">
+                        <div class="example-cn" id="lbl-example-cn">-</div>
+                        <div class="example-vn" id="lbl-example-vn">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-stroke-trigger" onclick="openStrokeModal()">✍️ Xem cách viết chữ Hán</button>
+
+        <div class="action-buttons">
+            <button class="btn-status btn-wrong" id="btn-mark-wrong" onclick="markCard(false)">Chưa thuộc</button>
+            <button class="btn-status btn-correct" id="btn-mark-correct" onclick="markCard(true)">Đã thuộc</button>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn-nav" id="btn-prev" onclick="prevCard()">❮ Quay lại</button>
+            <button class="btn-nav btn-shuffle" id="btn-shuffle" onclick="shuffleCards()">Trộn thẻ</button>
+            <button class="btn-nav" id="btn-next" onclick="nextCard()">Tiếp theo ❯</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-stroke" onclick="closeModalViaOverlay(event, 'modal-stroke')">
+        <div class="modal-stroke-content">
+            <div class="modal-header">
+                <div class="modal-title">Cách viết: <span id="stroke-char-title" style="color:#ff9500; font-size: 1.5rem; font-family: 'PingFang SC'"></span></div>
+                <button class="btn-nav" style="color:#8e8e93" onclick="closeModal('modal-stroke')">Đóng</button>
+            </div>
+            <div id="character-target-div"></div>
+            <button class="btn-replay" onclick="replayAnimation()">Phát lại hoạt cảnh</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-stats" onclick="closeModalViaOverlay(event, 'modal-stats')">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <button class="btn-nav" style="color:#8e8e93" onclick="closeModal('modal-stats')">Đóng</button>
+                <div class="modal-title">Tiến trình học tập</div>
+                <button class="btn-nav" style="color:#ff3b30;" onclick="resetStatsLog()">Xóa Lịch Sử</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-val" id="stat-total-vocab">0</div><div class="stat-lbl">Tổng từ vựng</div></div>
+                <div class="stat-card"><div class="stat-val" id="stat-ratio-done" style="color: #34c759;">0%</div><div class="stat-lbl">Thành thạo</div></div>
+            </div>
+            <div class="chart-container">
+                <div class="bar-wrapper">
+                    <div class="bar-segment correct" id="bar-correct"></div>
+                    <div class="bar-segment review" id="bar-review"></div>
+                </div>
+                <div class="chart-legend">
+                    <div>Thuộc: <span id="lbl-stat-c" style="color:#34c759;font-weight:600">0</span></div>
+                    <div>Ôn lại: <span id="lbl-stat-r" style="color:#ff9500;font-weight:600">0</span></div>
+                    <div>Chưa học: <span id="lbl-stat-u" style="font-weight:600">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-add-word" onclick="closeModalViaOverlay(event, 'modal-add-word')">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <button class="btn-nav" onclick="closeModal('modal-add-word')">Hủy</button>
+                <div class="modal-title">Thêm từ mới</div>
+                <button class="btn-nav" style="font-weight:600" onclick="saveNewWord()">Lưu</button>
+            </div>
+            <div class="input-group">
+                <div class="input-row"><label>Chữ Hán</label><input type="text" id="txt-word" placeholder="Ví dụ: 学习"></div>
+                <div class="input-row"><label>Pinyin</label><input type="text" id="txt-pinyin" placeholder="Ví dụ: xuéxí"></div>
+                <div class="input-row"><label>Nghĩa Việt</label><input type="text" id="txt-mean-vi" placeholder="Học tập"></div>
+                <div class="input-row"><label>Ví dụ (Trung)</label><input type="text" id="txt-ex-cn" placeholder="我喜欢学习。"></div>
+                <div class="input-row"><label>Ví dụ (Việt)</label><input type="text" id="txt-ex-vn" placeholder="Tôi thích học."></div>
+            </div>
+            <button class="btn-danger-zone" onclick="clearAllCustomWords()">Xóa toàn bộ sổ tay riêng</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-auth" onclick="closeModalViaOverlay(event, 'modal-auth')">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <button class="btn-nav" onclick="closeModal('modal-auth')">Hủy</button>
+                <div class="modal-title" id="auth-modal-title">Đăng nhập</div>
+                <button class="btn-nav" style="font-weight:600" onclick="submitAuthForm()">Xong</button>
+            </div>
+            <div class="input-group">
+                <div class="input-row"><label>Email</label><input type="email" id="txt-auth-email" placeholder="example@gmail.com"></div>
+                <div class="input-row"><label>Mật khẩu</label><input type="password" id="txt-auth-pass" placeholder="Tối thiểu 6 ký tự"></div>
+            </div>
+            <div style="text-align:center;color:#ff9500;font-size:0.85rem;cursor:pointer" id="auth-toggle-msg" onclick="toggleAuthMode()">Chưa có tài khoản? Đăng ký ngay</div>
+        </div>
+    </div>
+
+    <script>
+        // --- DỮ LIỆU CHUẨN: CHÍNH XÁC 75 TỪ HSK1 VÀ 75 TỪ HSK2 (TỔNG 150 TỪ) ---
+        // (Sử dụng format: "Chữ Hán|Pinyin|Nghĩa Việt|Ví dụ Trung|Ví dụ Việt")
+        const rawData = {
+            hsk1: [
+                "爱|ài|Yêu, thích|我爱你。|Tôi yêu bạn.",
+                "八|bā|Số tám|他女儿今年八岁。|Con gái anh ấy năm nay 8 tuổi.",
+                "爸爸|bàba|Bố, cha|我爸爸是医生。|Bố tôi là bác sĩ.",
+                "杯子|bēizi|Cái cốc|杯子里有茶。|Trong cốc có trà.",
+                "北京|Běijīng|Bắc Kinh|我想去北京。|Tôi muốn đi Bắc Kinh.",
+                "本|běn|Quyển, cuốn|桌子上有一本书。|Trên bàn có một cuốn sách.",
+                "不客气|bú kèqi|Không có gì|谢谢！ - 不客气。|Cảm ơn! - Không có gì.",
+                "不|bù|Không|我不吃猪肉。|Tôi không ăn thịt lợn.",
+                "菜|cài|Món ăn, rau|我喜欢吃中国菜。|Tôi thích ăn món Trung Quốc.",
+                "茶|chá|Trà|请喝茶。|Mời uống trà.",
+                "吃|chī|Ăn|你吃饭了吗？|Bạn ăn cơm chưa?",
+                "出租车|chūzūchē|Xe taxi|我们坐出租车去。|Chúng ta đi bằng taxi.",
+                "打电话|dǎ diànhuà|Gọi điện thoại|他在打电话。|Anh ấy đang gọi điện.",
+                "大|dà|To, lớn|这个苹果很大。|Quả táo này rất to.",
+                "的|de|Của (sở hữu)|这是我的书。|Đây là sách của tôi.",
+                "点|diǎn|Giờ, chút|现在是上午十点。|Bây giờ là 10 giờ sáng.",
+                "电脑|diànnǎo|Máy tính|我买了一个新电脑。|Tôi mua một máy tính mới.",
+                "电视|diànshì|Tivi|妈妈在看电视。|Mẹ đang xem tivi.",
+                "电影|diànyǐng|Phim|我喜欢看电影。|Tôi thích xem phim.",
+                "东西|dōngxi|Đồ vật|我去超市买东西。|Tôi đi siêu thị mua đồ.",
+                "都|dōu|Đều|我们都喜欢他。|Chúng tôi đều thích anh ấy.",
+                "读|dú|Đọc|请读这个句子。|Mời đọc câu này.",
+                "对不起|duìbuqǐ|Xin lỗi|对不起！ - 没关系。|Xin lỗi! - Không sao đâu.",
+                "多|duō|Nhiều|这里的人很多。|Người ở đây rất nhiều.",
+                "多少|duōshao|Bao nhiêu|这个多少钱？|Cái này bao nhiêu tiền?",
+                "儿子|érzi|Con trai|我儿子三岁了。|Con trai tôi 3 tuổi rồi.",
+                "二|èr|Số hai|现在是两点二十。|Bây giờ là 2 giờ 20 phút.",
+                "饭馆|fànguǎn|Quán ăn|我们去饭馆吃饭吧。|Chúng ta đến quán ăn nhé.",
+                "飞机|fēijī|Máy bay|我坐飞机去北京。|Tôi đi máy bay đến Bắc Kinh.",
+                "分钟|fēnzhōng|Phút|请等我五分钟。|Xin đợi tôi 5 phút.",
+                "高兴|gāoxìng|Vui vẻ|认识你我很高兴。|Rất vui được quen biết bạn.",
+                "个|gè|Cái, con, người|我是一个学生。|Tôi là một học sinh.",
+                "工作|gōngzuò|Công việc|他在医院工作。|Anh ấy làm việc ở bệnh viện.",
+                "汉语|Hànyǔ|Tiếng Trung|他在学习汉语。|Anh ấy đang học tiếng Trung.",
+                "好|hǎo|Tốt, khỏe|你好！|Chào bạn!",
+                "号|hào|Ngày, số|今天是五月一号。|Hôm nay là mùng 1 tháng 5.",
+                "喝|hē|Uống|我想喝水。|Tôi muốn uống nước.",
+                "和|hé|Và|我和他是好朋友。|Tôi và anh ấy là bạn tốt.",
+                "很|hěn|Rất|她很漂亮。|Cô ấy rất đẹp.",
+                "后面|hòumiàn|Phía sau|我家在学校后面。|Nhà tôi ở sau trường học.",
+                "回|huí|Trở về|我明天回家。|Ngày mai tôi về nhà.",
+                "会|huì|Biết, sẽ|我会说汉语。|Tôi biết nói tiếng Trung.",
+                "几|jǐ|Mấy|你家有几口人？|Nhà bạn có mấy người?",
+                "家|jiā|Nhà, gia đình|我家在北京。|Nhà tôi ở Bắc Kinh.",
+                "叫|jiào|Tên là|我叫大卫。|Tôi tên là David.",
+                "今天|jīntiān|Hôm nay|今天天气很好。|Thời tiết hôm nay rất tốt.",
+                "九|jiǔ|Số chín|现在是九点。|Bây giờ là 9 giờ.",
+                "开|kāi|Mở, lái xe|他开着一辆车。|Anh ấy đang lái một chiếc xe.",
+                "看|kàn|Nhìn, xem|我在看书。|Tôi đang đọc sách.",
+                "看见|kànjiàn|Nhìn thấy|我没看见他。|Tôi không nhìn thấy anh ấy.",
+                "块|kuài|Đồng (tiền)|这本书三十块。|Quyển sách này 30 đồng.",
+                "来|lái|Đến|他昨天没来。|Hôm qua anh ấy không đến.",
+                "老师|lǎoshī|Giáo viên|她是我们的老师。|Cô ấy là giáo viên của chúng tôi.",
+                "冷|lěng|Lạnh|今天很冷。|Hôm nay rất lạnh.",
+                "里|lǐ|Trong|杯子里有水。|Trong cốc có nước.",
+                "零|líng|Số không|今年是二零二三年。|Năm nay là năm 2023.",
+                "六|liù|Số sáu|桌子上有六本书。|Trên bàn có 6 quyển sách.",
+                "妈妈|māma|Mẹ|我妈妈不在家。|Mẹ tôi không có nhà.",
+                "吗|ma|Không? (câu hỏi)|你是学生吗？|Bạn là học sinh phải không?",
+                "买|mǎi|Mua|我买了一些苹果。|Tôi đã mua một ít táo.",
+                "没关系|méi guānxi|Không sao|对不起！- 没关系。|Xin lỗi! - Không sao.",
+                "没有|méiyǒu|Không có|我没有钱。|Tôi không có tiền.",
+                "米饭|mǐfàn|Cơm|我不喜欢吃米饭。|Tôi không thích ăn cơm.",
+                "明天|míngtiān|Ngày mai|明天是星期一。|Ngày mai là thứ hai.",
+                "名字|míngzi|Tên|你叫什么名字？|Bạn tên là gì?",
+                "哪|nǎ|Nào|你是哪国人？|Bạn là người nước nào?",
+                "哪儿|nǎr|Ở đâu|你去哪儿？|Bạn đi đâu?",
+                "那|nà|Kia, đó|那是我的电脑。|Đó là máy tính của tôi.",
+                "那儿|nàr|Chỗ kia|他在那儿。|Anh ấy ở đằng kia.",
+                "呢|ne|Thế, nhỉ|你在做什么呢？|Bạn đang làm gì thế?",
+                "能|néng|Có thể|你能帮我吗？|Bạn có thể giúp tôi không?",
+                "你|nǐ|Bạn|你好。|Chào bạn.",
+                "年|nián|Năm|我在中国住了三年。|Tôi đã sống ở Trung Quốc 3 năm.",
+                "女儿|nǚ'ér|Con gái|她有两个女儿。|Cô ấy có 2 cô con gái.",
+                "朋友|péngyǒu|Bạn bè|他是我的好朋友。|Anh ấy là bạn tốt của tôi."
+            ],
+            hsk2: [
+                "吧|ba|Nhé, đi|我们走吧。|Chúng ta đi nhé.",
+                "白|bái|Trắng|她穿着白色的衣服。|Cô ấy mặc quần áo màu trắng.",
+                "百|bǎi|Trăm|这个要一百块。|Cái này giá 100 tệ.",
+                "帮助|bāngzhù|Giúp đỡ|请帮助我。|Xin hãy giúp tôi.",
+                "报纸|bàozhǐ|Báo chí|爸爸每天看报纸。|Bố đọc báo mỗi ngày.",
+                "比|bǐ|So với|他比我高。|Anh ấy cao hơn tôi.",
+                "别|bié|Đừng|别哭了。|Đừng khóc nữa.",
+                "长|cháng|Dài|她的头发很长。|Tóc của cô ấy rất dài.",
+                "唱歌|chànggē|Hát|妹妹喜欢唱歌。|Em gái thích hát.",
+                "出|chū|Ra, xuất|他出去了。|Anh ấy ra ngoài rồi.",
+                "穿|chuān|Mặc, xỏ|今天很冷，多穿点。|Hôm nay rất lạnh, mặc nhiều vào.",
+                "次|cì|Lần|我去过两次北京。|Tôi đã đi Bắc Kinh 2 lần.",
+                "从|cóng|Từ|我从学校回来。|Tôi từ trường về.",
+                "错|cuò|Sai, lỗi|对不起，我错了。|Xin lỗi, tôi sai rồi.",
+                "打篮球|dǎ lánqiú|Chơi bóng rổ|下午我们去打篮球。|Buổi chiều chúng ta đi chơi bóng rổ.",
+                "大家|dàjiā|Mọi người|大家好！|Chào mọi người!",
+                "到|dào|Đến|你到家了吗？|Bạn về đến nhà chưa?",
+                "得|de|Được, đến nỗi|她跑得很快。|Cô ấy chạy rất nhanh.",
+                "等|děng|Đợi, chờ|请等一下。|Xin đợi một chút.",
+                "弟弟|dìdi|Em trai|我弟弟是学生。|Em trai tôi là học sinh.",
+                "第一|dì-yī|Thứ nhất|他考了第一名。|Cậu ấy thi được hạng nhất.",
+                "懂|dǒng|Hiểu|你听懂了吗？|Bạn nghe hiểu chưa?",
+                "对|duì|Đúng|你说得对。|Bạn nói đúng.",
+                "房间|fángjiān|Căn phòng|我的房间很干净。|Phòng của tôi rất sạch sẽ.",
+                "非常|fēicháng|Vô cùng|今天天气非常好。|Thời tiết hôm nay vô cùng tốt.",
+                "服务员|fúwùyuán|Phục vụ|服务员，买单。|Phục vụ, thanh toán.",
+                "高|gāo|Cao|他很高。|Anh ấy rất cao.",
+                "告诉|gàosu|Nói với|请告诉我。|Xin hãy nói cho tôi biết.",
+                "哥哥|gēge|Anh trai|哥哥比我大。|Anh trai lớn hơn tôi.",
+                "给|gěi|Cho|请给我一杯水。|Cho tôi một cốc nước.",
+                "公共汽车|gōnggòng qìchē|Xe buýt|我坐公共汽车上班。|Tôi đi xe buýt đi làm.",
+                "公司|gōngsī|Công ty|他在一家大公司工作。|Anh ấy làm ở một công ty lớn.",
+                "狗|gǒu|Con chó|我家有一只狗。|Nhà tôi có một con chó.",
+                "贵|guì|Đắt|这个手机太贵了。|Điện thoại này đắt quá.",
+                "过|guò|Đã từng|我去过中国。|Tôi đã từng đến Trung Quốc.",
+                "还|hái|Vẫn còn|他还在睡觉。|Anh ấy vẫn đang ngủ.",
+                "孩子|háizi|Đứa trẻ|她有两个孩子。|Cô ấy có 2 người con.",
+                "好吃|hǎochī|Ngon|这个菜很好吃。|Món này rất ngon.",
+                "黑|hēi|Đen|他穿着黑色的鞋。|Anh ấy đi đôi giày đen.",
+                "红|hóng|Đỏ|我喜欢红色的衣服。|Tôi thích quần áo màu đỏ.",
+                "欢迎|huānyíng|Hoan nghênh|欢迎光临！|Hoan nghênh quý khách!",
+                "回答|huídá|Trả lời|请回答我的问题。|Hãy trả lời câu hỏi của tôi.",
+                "件|jiàn|Chiếc, kiện|这件衣服很好看。|Chiếc áo này rất đẹp.",
+                "教室|jiàoshì|Phòng học|教室里没有人。|Trong phòng học không có ai.",
+                "机场|jīchǎng|Sân bay|我要去机场。|Tôi phải đi sân bay.",
+                "鸡蛋|jīdàn|Trứng gà|我每天吃一个鸡蛋。|Tôi ăn một quả trứng mỗi ngày.",
+                "旅游|lǚyóu|Du lịch|我们下个月去旅游。|Tháng sau chúng tôi đi du lịch.",
+                "卖|mài|Bán|这个怎么卖？|Cái này bán thế nào?",
+                "慢|màn|Chậm|请慢一点。|Xin chậm một chút.",
+                "忙|máng|Bận|我今天很忙。|Hôm nay tôi rất bận.",
+                "猫|māo|Con mèo|我喜欢猫。|Tôi thích mèo.",
+                "每天|měitiān|Mỗi ngày|我每天早上跑步。|Mỗi sáng tôi đều chạy bộ.",
+                "妹妹|mèimei|Em gái|妹妹在看电视。|Em gái đang xem tivi.",
+                "门|mén|Cửa|请关门。|Làm ơn đóng cửa.",
+                "面条|miàntiáo|Mì|我不吃面条。|Tôi không ăn mì.",
+                "男|nán|Nam|他是一个男孩子。|Cậu ấy là một bé trai.",
+                "您|nín|Ngài (lịch sự)|您好！|Chào ngài!",
+                "牛奶|niúnǎi|Sữa bò|请喝牛奶。|Mời uống sữa.",
+                "女|nǚ|Nữ|她是一个女医生。|Cô ấy là một nữ bác sĩ.",
+                "旁边|pángbiān|Bên cạnh|他在我旁边。|Anh ấy ở bên cạnh tôi.",
+                "跑步|pǎobù|Chạy bộ|我喜欢跑步。|Tôi thích chạy bộ.",
+                "便宜|piányi|Rẻ|这个苹果很便宜。|Quả táo này rất rẻ.",
+                "票|piào|Vé|我买了两张票。|Tôi đã mua 2 tấm vé.",
+                "妻子|qīzi|Vợ|我的妻子是老师。|Vợ tôi là giáo viên.",
+                "起床|qǐchuáng|Thức dậy|你几点起床？|Bạn mấy giờ thức dậy?",
+                "千|qiān|Nghìn|这个手机两千块。|Điện thoại này 2 nghìn tệ.",
+                "铅笔|qiānbǐ|Bút chì|我有一支铅笔。|Tôi có một cây bút chì.",
+                "晴|qíng|Nắng, trong xanh|今天是个晴天。|Hôm nay là một ngày nắng.",
+                "去年|qùnián|Năm ngoái|我去年去了北京。|Năm ngoái tôi đã đi Bắc Kinh.",
+                "让|ràng|Nhường, để|让他进来吧。|Để anh ấy vào đi.",
+                "日|rì|Ngày, mặt trời|今天是十日。|Hôm nay là ngày 10.",
+                "上班|shàngbān|Đi làm|我早上八点上班。|Sáng 8 giờ tôi đi làm.",
+                "身体|shēntǐ|Cơ thể, sức khỏe|你身体好吗？|Sức khỏe bạn tốt không?",
+                "生病|shēngbìng|Bị ốm|他生病了。|Anh ấy bị ốm rồi.",
+                "生日|shēngrì|Sinh nhật|祝你生日快乐。|Chúc bạn sinh nhật vui vẻ."
+            ]
+        };
+
+        const database = { hsk1: [], hsk2: [], custom: [], review: [] };
+
+        // Thuật toán TẢI DỮ LIỆU CHUẨN MỰC (KHÔNG NHÂN BẢN)
+        function loadStandardData() {
+            const categories = ['hsk1', 'hsk2'];
+            categories.forEach(cat => {
+                const baseArr = rawData[cat];
+                baseArr.forEach((template, index) => {
+                    const parts = template.split('|');
+                    database[cat].push({
+                        id: `${cat}_${index + 1}`,
+                        word: parts[0],
+                        pinyin: parts[1],
+                        meanVi: parts[2],
+                        exCn: parts[3],
+                        exVn: parts[4]
+                    });
+                });
+            });
+        }
+
+        // --- SYSTEM CORE ---
+        let usersDB = JSON.parse(localStorage.getItem('zh_v5_users')) || {};
+        let currentUser = localStorage.getItem('zh_v5_logged') || null;
+        let reviewList = [];
+        let learnedList = [];
+
+        let currentCategory = 'hsk1';
+        let flashcards = [];
+        let currentIndex = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let authMode = 'login';
+        let writer = null;
+
+        const cardElement = document.getElementById('flashcard');
+
+        // Text-To-Speech
+        function speakWord(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.82;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert("Trình duyệt không hỗ trợ phát âm AI.");
+            }
+        }
+
+        function handleCardClick(event) {
+            if (event.target.closest('#btn-speak-icon') || event.target.closest('.btn-speaker')) {
+                event.stopPropagation();
+                if (flashcards[currentIndex]) speakWord(flashcards[currentIndex].word);
+                return;
+            }
+            cardElement.classList.toggle('is-flipped');
+        }
+
+        function loadUserData() {
+            if (currentUser && usersDB[currentUser]) {
+                database.custom = usersDB[currentUser].customWords || [];
+                reviewList = usersDB[currentUser].reviewList || [];
+                learnedList = usersDB[currentUser].learnedList || [];
+            } else {
+                database.custom = JSON.parse(localStorage.getItem('zh_v5_c_words')) || [];
+                reviewList = JSON.parse(localStorage.getItem('zh_v5_r_list')) || [];
+                learnedList = JSON.parse(localStorage.getItem('zh_v5_l_list')) || [];
+            }
+            buildReviewCategory();
+        }
+
+        function saveDataSync() {
+            if (currentUser && usersDB[currentUser]) {
+                usersDB[currentUser].reviewList = reviewList;
+                usersDB[currentUser].learnedList = learnedList;
+                localStorage.setItem('zh_v5_users', JSON.stringify(usersDB));
+            } else {
+                localStorage.setItem('zh_v5_r_list', JSON.stringify(reviewList));
+                localStorage.setItem('zh_v5_l_list', JSON.stringify(learnedList));
+            }
+            buildReviewCategory();
+        }
+
+        function buildReviewCategory() {
+            // Chú ý: Đã loại bỏ HSK3 khỏi hàm tổng hợp
+            const allWords = [...database.hsk1, ...database.hsk2, ...database.custom];
+            database.review = allWords.filter(item => reviewList.includes(item.id));
+            document.getElementById('seg-review').innerText = `Ôn tập (${database.review.length})`;
+            if (currentCategory === 'review') flashcards = [...database.review];
+        }
+
+        function switchCategory(catName) {
+            currentCategory = catName;
+            document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('is-active'));
+            document.getElementById(`seg-${catName}`).classList.add('is-active');
+            flashcards = [...database[currentCategory]];
+            resetGame();
+        }
+
+        function updateCard() {
+            cardElement.classList.remove('is-flipped');
+            if (flashcards.length === 0) {
+                document.getElementById('card-front-view').innerHTML = `<div class="empty-state-text">Mục này hiện đang trống hoặc bạn đã học hết! 🎉</div>`;
+                document.getElementById('card-index').innerText = "0/0";
+                document.getElementById('progress-bar').style.width = '0%';
+                setDisabled(true);
+                return;
+            }
+            
+            const checkWord = document.getElementById('lbl-word');
+            if (!checkWord) {
+                document.getElementById('card-front-view').innerHTML = `
+                    <div class="word-container">
+                        <div class="word" id="lbl-word">-</div>
+                        <button class="btn-speaker" id="btn-speak-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></button>
+                    </div>
+                    <div class="pinyin" id="lbl-pinyin">-</div>`;
+            }
+
+            setDisabled(false);
+            const data = flashcards[currentIndex];
+            
+            document.getElementById('lbl-word').innerText = data.word;
+            document.getElementById('lbl-pinyin').innerText = data.pinyin;
+            document.getElementById('lbl-pinyin-back').innerText = data.pinyin;
+            document.getElementById('lbl-mean-vi').innerText = data.meanVi;
+            document.getElementById('lbl-example-cn').innerText = data.exCn;
+            document.getElementById('lbl-example-vn').innerText = data.exVn;
+
+            document.getElementById('card-index').innerText = `${currentIndex + 1}/${flashcards.length}`;
+            document.getElementById('btn-prev').disabled = currentIndex === 0;
+            document.getElementById('btn-next').disabled = currentIndex === flashcards.length - 1;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1)/flashcards.length)*100}%`;
+        }
+
+        function setDisabled(val) {
+            document.getElementById('btn-mark-wrong').disabled = val; document.getElementById('btn-mark-correct').disabled = val;
+            document.getElementById('btn-shuffle').disabled = val;
+        }
+
+        function nextCard() { if (currentIndex < flashcards.length - 1) { currentIndex++; updateCard(); } }
+        function prevCard() { if (currentIndex > 0) { currentIndex--; updateCard(); } }
+
+        function markCard(isCorrect) {
+            if (flashcards.length === 0) return;
+            const item = flashcards[currentIndex];
+            if (isCorrect) {
+                correctCount++; document.getElementById('correct-count').innerText = correctCount;
+                if (!learnedList.includes(item.id)) learnedList.push(item.id);
+                reviewList = reviewList.filter(id => id !== item.id);
+            } else {
+                wrongCount++; document.getElementById('wrong-count').innerText = wrongCount;
+                if (!reviewList.includes(item.id)) reviewList.push(item.id);
+                learnedList = learnedList.filter(id => id !== item.id);
+            }
+            saveDataSync();
+            if (currentIndex < flashcards.length - 1) { setTimeout(() => { currentIndex++; updateCard(); }, 250); }
+            else { setTimeout(() => { alert(`Danh mục học đã hoàn tất!\nThuộc bài: ${correctCount}\nCần ôn lại: ${wrongCount}`); resetGame(); }, 350); }
+        }
+
+        function resetGame() { currentIndex = 0; correctCount = 0; wrongCount = 0; document.getElementById('correct-count').innerText = 0; document.getElementById('wrong-count').innerText = 0; updateCard(); }
+        function shuffleCards() { flashcards.sort(() => Math.random() - 0.5); resetGame(); }
+
+        // --- HOẠT CẢNH HANZI WRITER ---
+        function openStrokeModal() {
+            if(flashcards.length === 0) return;
+            const modal = document.getElementById('modal-stroke');
+            const targetDiv = document.getElementById('character-target-div');
+            const char = flashcards[currentIndex].word.charAt(0); // Lấy chữ Hán đầu tiên
+            
+            document.getElementById('stroke-char-title').innerText = char;
+            targetDiv.innerHTML = ''; 
+            modal.classList.add('is-visible');
+
+            writer = HanziWriter.create('character-target-div', char, {
+                width: 160, height: 160, padding: 5, strokeAnimationSpeed: 1.5,
+                delayBetweenStrokes: 150, showOutline: true, strokeColor: '#007aff', outlineColor: '#e5e5ea'
+            });
+            writer.animateCharacter();
+        }
+
+        function replayAnimation() { if (writer) writer.animateCharacter(); }
+
+        // --- POPUPS & AUTH SYSTEM ---
+        function openAddWordModal() { document.getElementById('modal-add-word').classList.add('is-visible'); }
+        function openAuthModal() { document.getElementById('modal-auth').classList.add('is-visible'); }
+        function openStatsModal() {
+            const allWords = [...database.hsk1, ...database.hsk2, ...database.custom];
+            const total = allWords.length;
+            const correctTotal = learnedList.filter(id => allWords.some(w => w.id === id)).length;
+            const reviewTotal = reviewList.filter(id => allWords.some(w => w.id === id)).length;
+            const untouchedTotal = Math.max(0, total - correctTotal - reviewTotal);
+            const ratio = total > 0 ? Math.round((correctTotal / total) * 100) : 0;
+
+            document.getElementById('stat-total-vocab').innerText = total;
+            document.getElementById('stat-ratio-done').innerText = `${ratio}%`;
+            document.getElementById('lbl-stat-c').innerText = correctTotal;
+            document.getElementById('lbl-stat-r').innerText = reviewTotal;
+            document.getElementById('lbl-stat-u').innerText = untouchedTotal;
+
+            document.getElementById('bar-correct').style.width = `${total > 0 ? (correctTotal/total)*100 : 0}%`;
+            document.getElementById('bar-review').style.width = `${total > 0 ? (reviewTotal/total)*100 : 0}%`;
+            document.getElementById('modal-stats').classList.add('is-visible');
+        }
+        function resetStatsLog() { if (confirm("Xóa toàn bộ lịch sử để làm mới từ đầu?")) { reviewList = []; learnedList = []; saveDataSync(); closeModal('modal-stats'); resetGame(); } }
+        function closeModal(id) { document.getElementById(id).classList.remove('is-visible'); }
+        function closeModalViaOverlay(e, id) { if (e.target.classList.contains('modal-overlay')) closeModal(id); }
+
+        function saveNewWord() {
+            const w = document.getElementById('txt-word').value.trim();
+            const vi = document.getElementById('txt-mean-vi').value.trim();
+            const py = document.getElementById('txt-pinyin').value.trim();
+            if (!w || !vi) return alert("Vui lòng điền Chữ Hán và Nghĩa tiếng Việt.");
+            const newObj = {
+                id: "c_" + Date.now(), 
+                word: w, 
+                pinyin: py || "pīnyīn",
+                meanVi: vi,
+                exCn: document.getElementById('txt-ex-cn').value.trim() || "暂无例句。", 
+                exVn: document.getElementById('txt-ex-vn').value.trim() || "Chưa có ví dụ."
+            };
+            if (currentUser && usersDB[currentUser]) { usersDB[currentUser].customWords.push(newObj); localStorage.setItem('zh_v5_users', JSON.stringify(usersDB)); }
+            else { database.custom.push(newObj); localStorage.setItem('zh_v5_c_words', JSON.stringify(database.custom)); }
+            
+            document.getElementById('txt-word').value = ''; document.getElementById('txt-mean-vi').value = ''; document.getElementById('txt-pinyin').value = ''; document.getElementById('txt-ex-cn').value = ''; document.getElementById('txt-ex-vn').value = '';
+            loadUserData(); closeModal('modal-add-word'); switchCategory('custom');
+        }
+
+        function clearAllCustomWords() {
+            if (confirm("Xóa sạch toàn bộ sổ tay từ vựng tự thêm?")) {
+                if (currentUser) usersDB[currentUser].customWords = []; else localStorage.removeItem('zh_v5_c_words');
+                saveDataSync(); loadUserData(); closeModal('modal-add-word'); switchCategory('custom');
+            }
+        }
+
+        function updateAuthUI() {
+            const lbl = document.getElementById('lbl-user-status'); const btn = document.getElementById('btn-auth-action');
+            if (currentUser) { lbl.innerHTML = `Tài khoản: <span>${currentUser}</span>`; btn.innerText = "Đăng xuất"; btn.className = "btn-auth-trigger logout"; btn.onclick = logout; }
+            else { lbl.innerHTML = `Trạng thái: <span>Khách</span>`; btn.innerText = "Đăng nhập"; btn.className = "btn-auth-trigger"; btn.onclick = openAuthModal; }
+        }
+        function toggleAuthMode() {
+            authMode = authMode === 'login' ? 'register' : 'login';
+            document.getElementById('auth-modal-title').innerText = authMode === 'login' ? "Đăng nhập" : "Đăng ký";
+            document.getElementById('auth-toggle-msg').innerText = authMode === 'login' ? "Chưa có tài khoản? Đăng ký" : "Đã có tài khoản? Đăng nhập";
+        }
+        function submitAuthForm() {
+            const e = document.getElementById('txt-auth-email').value.trim(); const p = document.getElementById('txt-auth-pass').value.trim();
+            if (!e || p.length < 6) return alert("Email sai định dạng hoặc mật khẩu chưa đủ 6 ký tự.");
+            if (authMode === 'register') {
+                if (usersDB[e]) return alert("Email này đã được đăng ký hệ thống!");
+                usersDB[e] = { password: p, customWords: [], reviewList: [], learnedList: [] };
+                localStorage.setItem('zh_v5_users', JSON.stringify(usersDB)); alert("Đăng ký thành công!"); toggleAuthMode();
+            } else {
+                if (!usersDB[e] || usersDB[e].password !== p) return alert("Tài khoản hoặc mật khẩu không chính xác.");
+                currentUser = e; localStorage.setItem('zh_v5_logged', e); closeModal('modal-auth'); updateAuthUI(); loadUserData(); switchCategory('hsk1');
+            }
+        }
+        function logout() { if (confirm("Bạn có chắc muốn đăng xuất?")) { currentUser = null; localStorage.removeItem('zh_v5_logged'); updateAuthUI(); loadUserData(); switchCategory('hsk1'); } }
+
+        // RUN ENGINE (Đã đổi sang hàm loadStandardData)
+        loadStandardData();
+        updateAuthUI();
+        loadUserData();
+        switchCategory('hsk1');
+    </script>
+</body>
+</html>
